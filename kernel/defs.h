@@ -9,6 +9,7 @@ struct pipe;
 struct proc;
 struct spinlock;
 struct stat;
+struct pstat;
 
 // bio.c
 void            binit(void);
@@ -109,7 +110,9 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
-
+void            check_status(void);
+int             getpinfo(struct pstat*);
+int             setpriority(int,int);
 // swtch.S
 void            swtch(struct context**, struct context*);
 
@@ -135,6 +138,7 @@ char*           strncpy(char*, const char*, int);
 int             argint(int, int*);
 int             argptr(int, char**, int);
 int             argstr(int, char**);
+int             argstruct(int, struct pstat**, int);
 int             fetchint(struct proc*, uint, int*);
 int             fetchstr(struct proc*, uint, char**);
 void            syscall(void);

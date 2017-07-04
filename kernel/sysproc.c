@@ -5,6 +5,7 @@
 #include "mmu.h"
 #include "proc.h"
 #include "sysfunc.h"
+#include "pstat.h"
 
 int
 sys_fork(void)
@@ -41,10 +42,26 @@ sys_getpid(void)
   return proc->pid;
 }
 
-int 
-sys_getnumsyscallp(void)
+int
+sys_getpinfo(void)
 {
-  return proc->numsyscallp;
+  struct pstat *ps;
+  if (argstruct(0, &ps, sizeof(*ps)))
+    return -1;
+  return getpinfo(ps);
+}
+
+int
+sys_setpriority(void)
+{
+  int pid, priority;
+  if (argint(0, &pid) < 0) // pass the first argument
+    return -1;
+  if (argint(1, &priority) < 0) // pass the second argument
+    return -1;
+  if (priority < 0 || priority > 3) // bad priority 
+    return -1;
+  return setpriority(pid, priority);
 }
 
 int

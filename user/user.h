@@ -2,7 +2,8 @@
 #define _USER_H_
 
 struct stat;
-
+struct pstat;
+enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 // system calls
 int fork(void);
 int exit(void) __attribute__((noreturn));
@@ -22,7 +23,8 @@ int mkdir(char*);
 int chdir(char*);
 int dup(int);
 int getpid(void);
-int getnumsyscallp(void);
+int getpinfo(struct pstat *);
+int setpriority(int,int);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);

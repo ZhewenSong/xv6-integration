@@ -53,15 +53,22 @@ bzero(int dev, int bno)
 static uint
 balloc(uint dev)
 {
-  int b, bi, m;
+  int b, bi, m, bound;
   struct buf *bp;
   struct superblock sb;
-
+  
   bp = 0;
   readsb(dev, &sb);
   for(b = 0; b < sb.size; b += BPB){
     bp = bread(dev, BBLOCK(b, sb.ninodes));
-    for(bi = 0; bi < BPB; bi++){
+    
+    if(b+BPB > sb.size){ //last bitmap block
+      bound = sb.size % BPB;
+    } else {
+      bound = BPB;
+    }
+    
+    for(bi = 0; bi < bound; bi++){
       m = 1 << (bi % 8);
       if((bp->data[bi/8] & m) == 0){  // Is block free?
         bp->data[bi/8] |= m;  // Mark block in use on disk.
@@ -72,7 +79,9 @@ balloc(uint dev)
     }
     brelse(bp);
   }
-  panic("balloc: out of blocks");
+  
+  //panic("balloc: out of blocks");
+  return 0;
 }
 
 // Free a disk block.
@@ -409,7 +418,12 @@ readi(struct inode *ip, char *dst, uint off, uint n)
     n = ip->size - off;
 
   for(tot=0; tot<n; tot+=m, off+=m, dst+=m){
-    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+    uint sector_number = bmap(ip, off/BSIZE);
+    if(sector_number == 0){ //failed to find block
+      panic("readi: trying to read a block that was never allocated");
+    }
+    
+    bp = bread(ip->dev, sector_number);
     m = min(n - tot, BSIZE - off%BSIZE);
     memmove(dst, bp->data + off%BSIZE, m);
     brelse(bp);
@@ -436,7 +450,13 @@ writei(struct inode *ip, char *src, uint off, uint n)
     n = MAXFILE*BSIZE - off;
 
   for(tot=0; tot<n; tot+=m, off+=m, src+=m){
-    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+    uint sector_number = bmap(ip, off/BSIZE);
+    if(sector_number == 0){ //failed to find block
+      n = tot; //return number of bytes written so far
+      break;
+    }
+    
+    bp = bread(ip->dev, sector_number);
     m = min(n - tot, BSIZE - off%BSIZE);
     memmove(bp->data + off%BSIZE, src, m);
     bwrite(bp);

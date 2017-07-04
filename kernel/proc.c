@@ -17,7 +17,7 @@ int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
 
-int t_max[4] = {5, 5, 10, 20};
+int t_max[4] = {64, 32, 16, 8}; // timer ticks of the four levels
 static void wakeup1(void *chan);
 void
 pinit(void)
@@ -43,14 +43,13 @@ allocproc(void)
   return 0;
 
 found:
+  // initialize the fields including state, pid, priority and ticks used
   p->state = EMBRYO;
   p->pid = nextpid++;
-  p->priority = 0;
-  p->last_priority = 0;
+  p->priority = NLAYER-1;
   int i;
   for (i=0; i<NLAYER; i++) {
     p->ticks[i] = 0;
-    p->last_ticks[i] = 0;
   }
  
   release(&ptable.lock);
@@ -160,7 +159,6 @@ fork(void)
   np->cwd = idup(proc->cwd);
  
   pid = np->pid;
-  np->numsyscallp = 0;
   
   np->state = RUNNABLE;
   safestrcpy(np->name, proc->name, sizeof(proc->name));
@@ -261,11 +259,14 @@ wait(void)
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
 
+// Get the highest priority level across the proc table so that
+// the scheduler schedule the first process with this priority
+// in the proc table
 int get_highest(void) {
-    int highest = NLAYER - 1;
+    int highest = 0;
     struct proc *p;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if (p->state == RUNNABLE && highest > p->priority)
+        if (p->state == RUNNABLE && highest < p->priority)
             highest = p->priority;
     }
     return highest;
@@ -283,8 +284,7 @@ scheduler(void)
     acquire(&ptable.lock);
     // finding the highest runnable level
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      //int index = p-ptable.proc;
-      if(p->state != RUNNABLE || p->priority > get_highest())
+      if(p->state != RUNNABLE || p->priority < get_highest())
           // only run the processes at the current highest level
           continue;
       
@@ -292,34 +292,42 @@ scheduler(void)
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       p->state = RUNNING;
-      /*
-      struct pstat ps;
-      struct proc *q;
-      getpinfo(&ps);
-      for (q=ptable.proc;q<&ptable.proc[NPROC];q++) {
-          int index = q-ptable.proc;
-          if (ps.state[index] == RUNNING)
-            cprintf("%d,%d\n", ps.pid[index], ps.priority[index]);
-      }
-      */
+   
+      
       p->ticks[p->priority]++; 
-      if (p->ticks[p->priority]%t_max[p->priority] == 0 && p->priority < NLAYER - 1) {
-        p->priority++; // downgrade
+      
+      if (p->ticks[p->priority]%t_max[p->priority] == 0 && p->priority > 0) {
+        p->priority--; // downgrade when the time ticks on this level are used up
       }
       
+      // Wrap around
+      /*
+      if (p->ticks[p->priority] == t_max[p->priority] - 1) {
+          p->ticks[p->priority] = t_max[p->priority];
+      } else {
+          p->ticks[p->priority] = (p->ticks[p->priority] + 1) % t_max[p->priority];
+      }
+      if (p->ticks[p->priority] == t_max[p->priority] && p->priority > 0) {
+          p->priority--;
+      }
+      */
+
       proc = p;
       switchuvm(p);
       swtch(&cpu->scheduler, proc->context);
       switchkvm();
-      //if (p->priority == NLAYER - 1 &&  p->ticks[p->priority]%t_max[NLAYER-1] != 0)
-          // continue running this proc if ticks in level 3 have not been used up
-      //    p--;
-      
+     
+      // if the time ticks are not used up, we continue schedule this process in the next tick
       if (p->ticks[p->priority]%t_max[p->priority] != 0)
           p--;
-      // Process is done running for now.
-      // It should have changed its p->state before coming back. 
       
+
+      // Wrap around
+      // if (p->ticks[p->priority] != t_max[p->priority]) p--;
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+
       proc = 0;
     }
     release(&ptable.lock);
@@ -392,6 +400,9 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   proc->chan = chan;
   proc->state = SLEEPING;
+
+  // when proc is sleeping, should not count the tick in any level
+  // proc->ticks[proc->priority]--;
   sched();
 
   // Tidy up.
@@ -448,18 +459,7 @@ kill(int pid)
   return -1;
 }
 
-void check_status(void) {
-    struct proc *p;
-    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-        if (p->state == RUNNABLE && p->last_priority == p->priority && 
-                p->last_ticks[p->priority] == p->ticks[p->priority]) {
-            p->priority--;  // starving. needs upgrade
-        }
-        p->last_priority = p->priority;
-        p->last_ticks[p->priority] = p->ticks[p->priority];
-    }
-}
-
+// fill in the struct pstat with the current states across the proc table
 int getpinfo(struct pstat* ps) {
     struct proc *p;
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
@@ -475,9 +475,20 @@ int getpinfo(struct pstat* ps) {
         for (level=0; level < NLAYER; level++)
             ps->ticks[index][level] = p->ticks[level];
     }
-    return 0;
+    return 0; // success
 }
 
+// set the priority of the process with said pid
+int setpriority(int pid, int priority) {
+    struct proc *p;
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+        if (p->pid == pid) { // pid found in the ptable
+            p->priority = priority;
+            return 0; // success
+        }
+    }
+    return -1; // pid not found, failed
+}
 
 // Print a process listing to console.  For debugging.
 // Runs when user types ^P on console.
@@ -500,7 +511,7 @@ procdump(void)
   
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == UNUSED)
-        continue;
+      continue;
     if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
       state = states[p->state];
     else

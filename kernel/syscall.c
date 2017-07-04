@@ -3,6 +3,7 @@
 #include "param.h"
 #include "mmu.h"
 #include "proc.h"
+#include "pstat.h"
 #include "x86.h"
 #include "syscall.h"
 #include "sysfunc.h"
@@ -77,6 +78,22 @@ argstr(int n, char **pp)
   return fetchstr(proc, addr, pp);
 }
 
+// Fetch the nth struct pstat as a pointer
+// to a block of memory of size n bytes.  Check that the pointer
+// lies within the process address space.
+int
+argstruct(int n, struct pstat **ps, int size)
+{ 
+  int i;
+  
+  if(argint(n, &i) < 0)
+    return -1;
+  if((uint)i >= proc->sz || (uint)i+size > proc->sz)
+    return -1;
+  *ps = (struct pstat *)i;
+  return 0;
+}
+
 // syscall function declarations moved to sysfunc.h so compiler
 // can catch definitions that don't match
 
@@ -90,6 +107,8 @@ static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
 [SYS_fstat]   sys_fstat,
 [SYS_getpid]  sys_getpid,
+[SYS_getpinfo] sys_getpinfo,
+[SYS_setpriority] sys_setpriority,
 [SYS_kill]    sys_kill,
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
@@ -99,7 +118,6 @@ static int (*syscalls[])(void) = {
 [SYS_read]    sys_read,
 [SYS_sbrk]    sys_sbrk,
 [SYS_sleep]   sys_sleep,
-[SYS_getnumsyscallp] sys_getnumsyscallp,
 [SYS_unlink]  sys_unlink,
 [SYS_wait]    sys_wait,
 [SYS_write]   sys_write,
@@ -116,8 +134,6 @@ syscall(void)
   num = proc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num] != NULL) {
     proc->tf->eax = syscalls[num]();
-    if(num != SYS_getnumsyscallp)
-        proc->numsyscallp += 1;
   } else {
     cprintf("%d %s: unknown sys call %d\n",
             proc->pid, proc->name, num);

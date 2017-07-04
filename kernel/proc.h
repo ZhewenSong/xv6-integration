@@ -10,6 +10,7 @@
 #define SEG_TSS   6  // this process's task state
 #define NSEGS     7
 
+#include "spinlock.h"
 // Per-CPU state
 struct cpu {
   uchar id;                    // Local APIC ID; index into cpus[] below
@@ -27,7 +28,6 @@ struct cpu {
 
 extern struct cpu cpus[NCPU];
 extern int ncpu;
-
 // Per-CPU variables, holding pointers to the
 // current cpu and to the current process.
 // The asm suffix tells gcc to use "%gs:0" to refer to cpu
@@ -38,7 +38,6 @@ extern int ncpu;
 // in thread libraries such as Linux pthreads.
 extern struct cpu *cpu asm("%gs:0");       // &cpus[cpunum()]
 extern struct proc *proc asm("%gs:4");     // cpus[cpunum()].proc
-
 // Saved registers for kernel context switches.
 // Don't need to save all the segment registers (%cs, etc),
 // because they are constant across kernel contexts.
@@ -58,7 +57,6 @@ struct context {
 };
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
-
 // Per-process state
 struct proc {
   uint sz;                     // Size of process memory (bytes)
@@ -66,7 +64,6 @@ struct proc {
   char *kstack;                // Bottom of kernel stack for this process
   enum procstate state;        // Process state
   volatile int pid;            // Process ID
-  int numsyscallp;             // Number of times of system call
   struct proc *parent;         // Parent process
   struct trapframe *tf;        // Trap frame for current syscall
   struct context *context;     // swtch() here to run process
@@ -75,6 +72,8 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int priority;                // Prority level the proc is currently at
+  int ticks[NLAYER];           // How many ticks the proc has used for each level
 };
 
 // Process memory is laid out contiguously, low addresses first:
