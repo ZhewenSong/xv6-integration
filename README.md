@@ -1,8 +1,11 @@
 # xv6
 
-This is an implementation of MLFQ scheduler, virtual memory layout rearrangement and kernel threads of xv6 operation system
-
-The VM layout now looks like
+<p>
+This is an implementation of MLFQ scheduler, virtual memory layout rearrangement and kernel threads of xv6 operation system.
+<p>
+Each process can create and run at most 8 threads concurrently.
+<p>
+The VM layout now looks like the following
 
 <p>
 <pre>
