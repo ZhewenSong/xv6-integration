@@ -4,6 +4,8 @@ This is an implementation of MLFQ scheduler, virtual memory layout rearrangement
 
 The VM layout now looks like
 
+<p>
+<pre>
 +-------------------------------+  <--- USERTOP
 |     Stack of the Process      |  1 PAGE
 +-------------------------------+  
@@ -24,3 +26,4 @@ The VM layout now looks like
 +-------------------------------+
 |      Guard Page (FREE)        |  2 PAGES
 +-------------------------------+
+</pre>
