@@ -3,15 +3,17 @@
 
 // System call handlers
 int sys_chdir(void);
+int sys_clone(void);
 int sys_close(void);
+int sys_cv_wait(void);
+int sys_cv_signal(void);
 int sys_dup(void);
 int sys_exec(void);
 int sys_exit(void);
 int sys_fork(void);
 int sys_fstat(void);
 int sys_getpid(void);
-int sys_getpinfo(void);
-int sys_setpriority(void);
+int sys_join(void);
 int sys_kill(void);
 int sys_link(void);
 int sys_mkdir(void);

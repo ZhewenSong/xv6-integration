@@ -2,12 +2,22 @@
 #define _USER_H_
 
 struct stat;
-struct pstat;
-enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+typedef uint lock_t;
+typedef uint cond_t;
+typedef struct {
+  lock_t lock;
+  cond_t cond;
+  int value;
+} sem_t;
+
 // system calls
 int fork(void);
+int clone(void(*)(void*), void*);
+int cv_wait(void*, void*);
+int cv_signal(void*);
 int exit(void) __attribute__((noreturn));
 int wait(void);
+int join(void);
 int pipe(int*);
 int write(int, void*, int);
 int read(int, void*, int);
@@ -23,8 +33,6 @@ int mkdir(char*);
 int chdir(char*);
 int dup(int);
 int getpid(void);
-int getpinfo(struct pstat *);
-int setpriority(int,int);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
@@ -42,6 +50,14 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
-
+void lock_init(lock_t*);
+void lock_acquire(lock_t*);
+void lock_release(lock_t*);
+void cond_init(cond_t*);
+void cond_wait(cond_t*, lock_t*);
+void cond_signal(cond_t*);
+void sem_init(sem_t*, int);
+void sem_wait(sem_t*);
+void sem_post(sem_t*);
 #endif // _USER_H_
 

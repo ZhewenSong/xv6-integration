@@ -2,6 +2,9 @@
 # user programs
 USER_PROGS := \
 	cat\
+	demo1\
+	demo2\
+	pc\
 	echo\
 	forktest\
 	grep\
@@ -15,7 +18,6 @@ USER_PROGS := \
 	stressfs\
 	tester\
 	usertests\
-	upgrade\
 	wc\
 	zombie
 
@@ -26,7 +28,8 @@ USER_LIBS := \
 	ulib.o\
 	usys.o\
 	printf.o\
-	umalloc.o
+	umalloc.o\
+	threadlib.o
 
 USER_LIBS := $(addprefix user/, $(USER_LIBS))
 
@@ -74,7 +77,7 @@ USER_LDFLAGS += --omagic
 USER_LDFLAGS += --entry=main
 
 # location in memory where the program will be loaded
-USER_LDFLAGS += --section-start=.text=0x0
+USER_LDFLAGS += --section-start=.text=0x2000
 
 user/bin:
 	mkdir -p user/bin

@@ -5,12 +5,22 @@
 #include "mmu.h"
 #include "proc.h"
 #include "sysfunc.h"
-#include "pstat.h"
 
 int
 sys_fork(void)
 {
   return fork();
+}
+
+int 
+sys_clone(void)
+{
+  void (*fcn)(void *), *arg;
+  if (argptr(0, (void *)&fcn, sizeof(void(*)(void *))) < 0)
+      return -1;
+  if (argptr2(1, (void *)&arg, sizeof(void(*))) < 0)
+      return -1;
+  return clone(fcn, arg);
 }
 
 int
@@ -27,6 +37,12 @@ sys_wait(void)
 }
 
 int
+sys_join(void)
+{
+  return join();
+}
+
+int
 sys_kill(void)
 {
   int pid;
@@ -40,28 +56,6 @@ int
 sys_getpid(void)
 {
   return proc->pid;
-}
-
-int
-sys_getpinfo(void)
-{
-  struct pstat *ps;
-  if (argstruct(0, &ps, sizeof(*ps)))
-    return -1;
-  return getpinfo(ps);
-}
-
-int
-sys_setpriority(void)
-{
-  int pid, priority;
-  if (argint(0, &pid) < 0) // pass the first argument
-    return -1;
-  if (argint(1, &priority) < 0) // pass the second argument
-    return -1;
-  if (priority < 0 || priority > 3) // bad priority 
-    return -1;
-  return setpriority(pid, priority);
 }
 
 int
@@ -98,6 +92,26 @@ sys_sleep(void)
   release(&tickslock);
   return 0;
 }
+
+
+int
+sys_cv_wait(void)
+{
+  void *cv;
+  void *lk;
+  argptr(0, (void *)&cv, sizeof(void *));
+  argptr(1, (void *)&lk, sizeof(void *));
+  return cv_wait(cv, lk);  
+}
+
+int
+sys_cv_signal(void)
+{
+  void *cv;
+  argptr(0, (void *)&cv, sizeof(void *));
+  return cv_signal(cv);
+}
+
 
 // return how many clock tick interrupts have occurred
 // since boot.

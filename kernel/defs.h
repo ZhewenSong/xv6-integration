@@ -9,7 +9,6 @@ struct pipe;
 struct proc;
 struct spinlock;
 struct stat;
-struct pstat;
 
 // bio.c
 void            binit(void);
@@ -99,6 +98,9 @@ int             pipewrite(struct pipe*, char*, int);
 struct proc*    copyproc(struct proc*);
 void            exit(void);
 int             fork(void);
+int             clone(void(*)(void*), void*);
+int             cv_wait(void*, void*);
+int             cv_signal(void*);
 int             growproc(int);
 int             kill(int);
 void            pinit(void);
@@ -108,11 +110,9 @@ void            sched(void);
 void            sleep(void*, struct spinlock*);
 void            userinit(void);
 int             wait(void);
+int             join(void);
 void            wakeup(void*);
 void            yield(void);
-void            check_status(void);
-int             getpinfo(struct pstat*);
-int             setpriority(int,int);
 // swtch.S
 void            swtch(struct context**, struct context*);
 
@@ -137,8 +137,8 @@ char*           strncpy(char*, const char*, int);
 // syscall.c
 int             argint(int, int*);
 int             argptr(int, char**, int);
+int             argptr2(int, char**, int);
 int             argstr(int, char**);
-int             argstruct(int, struct pstat**, int);
 int             fetchint(struct proc*, uint, int*);
 int             fetchstr(struct proc*, uint, char**);
 void            syscall(void);

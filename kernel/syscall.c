@@ -3,7 +3,6 @@
 #include "param.h"
 #include "mmu.h"
 #include "proc.h"
-#include "pstat.h"
 #include "x86.h"
 #include "syscall.h"
 #include "sysfunc.h"
@@ -14,11 +13,20 @@
 // library system call function. The saved user %esp points
 // to a saved program counter, and then the first argument.
 
+int
+isValid(struct proc* p, uint addr, uint n) {
+  int valid = 
+      ( (addr+n <= p->sz && addr >= USERBOT) ||
+        (addr+n <= p->tstack && addr+PGSIZE >= p->tstack) );
+  //cprintf("valid : %d\n", valid);
+  return valid;
+}
+
 // Fetch the int at addr from process p.
 int
 fetchint(struct proc *p, uint addr, int *ip)
 {
-  if(addr >= p->sz || addr+4 > p->sz)
+  if (!isValid(p, addr, sizeof(uint)))
     return -1;
   *ip = *(int*)(addr);
   return 0;
@@ -32,10 +40,13 @@ fetchstr(struct proc *p, uint addr, char **pp)
 {
   char *s, *ep;
 
-  if(addr >= p->sz)
+  if (!isValid(p, addr, sizeof(char)))
     return -1;
   *pp = (char*)addr;
-  ep = (char*)p->sz;
+  if (addr >= p->tstack - PGSIZE && addr < p->tstack) 
+      ep = (char*)p->tstack;
+  else 
+      ep = (char*)p->sz;
   for(s = *pp; s < ep; s++)
     if(*s == 0)
       return s - *pp;
@@ -59,8 +70,26 @@ argptr(int n, char **pp, int size)
   
   if(argint(n, &i) < 0)
     return -1;
-  if((uint)i >= proc->sz || (uint)i+size > proc->sz)
+  if (!isValid(proc, (uint) i, (uint) size))
     return -1;
+  *pp = (char*)i;
+  return 0;
+}
+
+// Allow passing NULL pointer
+int
+argptr2(int n, char **pp, int size)
+{
+  int i;
+  
+  if(argint(n, &i) < 0)
+    return -1;
+  if (i == 0) {
+    *pp = (char *)0; 
+    return 0; 
+  }
+  if (!isValid(proc, (uint) i, (uint) size))
+    return -1; 
   *pp = (char*)i;
   return 0;
 }
@@ -78,22 +107,6 @@ argstr(int n, char **pp)
   return fetchstr(proc, addr, pp);
 }
 
-// Fetch the nth struct pstat as a pointer
-// to a block of memory of size n bytes.  Check that the pointer
-// lies within the process address space.
-int
-argstruct(int n, struct pstat **ps, int size)
-{ 
-  int i;
-  
-  if(argint(n, &i) < 0)
-    return -1;
-  if((uint)i >= proc->sz || (uint)i+size > proc->sz)
-    return -1;
-  *ps = (struct pstat *)i;
-  return 0;
-}
-
 // syscall function declarations moved to sysfunc.h so compiler
 // can catch definitions that don't match
 
@@ -107,8 +120,6 @@ static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
 [SYS_fstat]   sys_fstat,
 [SYS_getpid]  sys_getpid,
-[SYS_getpinfo] sys_getpinfo,
-[SYS_setpriority] sys_setpriority,
 [SYS_kill]    sys_kill,
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
@@ -122,7 +133,13 @@ static int (*syscalls[])(void) = {
 [SYS_wait]    sys_wait,
 [SYS_write]   sys_write,
 [SYS_uptime]  sys_uptime,
+[SYS_clone]   sys_clone,
+[SYS_join]    sys_join,
+[SYS_cv_wait]  sys_cv_wait,
+[SYS_cv_signal] sys_cv_signal,
 };
+
+
 
 // Called on a syscall trap. Checks that the syscall number (passed via eax)
 // is valid and then calls the appropriate handler for the syscall.

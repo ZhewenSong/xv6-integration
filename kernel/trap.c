@@ -45,6 +45,22 @@ trap(struct trapframe *tf)
   }
 
   switch(tf->trapno){
+  
+  case T_PGFLT: {
+    if (rcr2() == 0xffffffff) {
+      proc->killed = 1;
+      break;
+    }
+    if (rcr2() < proc->tstack - PGSIZE && rcr2() > proc->tstack - 2 * PGSIZE) {
+      proc->killed = 1;
+      cprintf("thread %d stack overflow at 0x%p\n", proc->pid, rcr2());
+      break;
+    }
+    proc->killed = 1;
+    //cprintf("process %d seg fault at 0x%p\n", proc->pid, rcr2());
+    break;
+  }
+    
   case T_IRQ0 + IRQ_TIMER:
     if(cpu->id == 0){
       acquire(&tickslock);
@@ -52,6 +68,10 @@ trap(struct trapframe *tf)
       wakeup(&ticks);
       release(&tickslock);
     }
+    /*
+    if (tf->eip < USERTOP)
+        cprintf("TI@0x%x (%d)\n", tf->eip, proc->pid);
+    */
     lapiceoi();
     break;
   case T_IRQ0 + IRQ_IDE:
