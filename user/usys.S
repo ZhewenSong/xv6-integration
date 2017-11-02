@@ -10,6 +10,7 @@
 
 SYSCALL(fork)
 SYSCALL(clone)
+SYSCALL(cv_init)
 SYSCALL(cv_wait)
 SYSCALL(cv_signal)
 SYSCALL(exit)

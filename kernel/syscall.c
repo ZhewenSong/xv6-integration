@@ -135,6 +135,7 @@ static int (*syscalls[])(void) = {
 [SYS_uptime]  sys_uptime,
 [SYS_clone]   sys_clone,
 [SYS_join]    sys_join,
+[SYS_cv_init]  sys_cv_init,
 [SYS_cv_wait]  sys_cv_wait,
 [SYS_cv_signal] sys_cv_signal,
 };

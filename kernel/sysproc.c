@@ -93,13 +93,20 @@ sys_sleep(void)
   return 0;
 }
 
+int
+sys_cv_init(void)
+{
+  cond_t *cv;
+  argptr(0, (void *)&cv, sizeof(cond_t));
+  return cv_init(cv);
+}
 
 int
 sys_cv_wait(void)
 {
-  void *cv;
+  cond_t *cv;
   void *lk;
-  argptr(0, (void *)&cv, sizeof(void *));
+  argptr(0, (void *)&cv, sizeof(cond_t));
   argptr(1, (void *)&lk, sizeof(void *));
   return cv_wait(cv, lk);  
 }
@@ -107,8 +114,8 @@ sys_cv_wait(void)
 int
 sys_cv_signal(void)
 {
-  void *cv;
-  argptr(0, (void *)&cv, sizeof(void *));
+  cond_t *cv;
+  argptr(0, (void *)&cv, sizeof(cond_t));
   return cv_signal(cv);
 }
 

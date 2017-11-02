@@ -10,6 +10,14 @@ struct proc;
 struct spinlock;
 struct stat;
 
+typedef struct {
+    struct proc *queue[64];
+    int head;
+    int tail;
+    int size;
+    uint lk;
+} cond_t;
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -99,8 +107,9 @@ struct proc*    copyproc(struct proc*);
 void            exit(void);
 int             fork(void);
 int             clone(void(*)(void*), void*);
-int             cv_wait(void*, void*);
-int             cv_signal(void*);
+int             cv_init(cond_t *);
+int             cv_wait(cond_t *, void*);
+int             cv_signal(cond_t *);
 int             growproc(int);
 int             kill(int);
 void            pinit(void);

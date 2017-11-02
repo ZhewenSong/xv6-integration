@@ -1,9 +1,15 @@
 #ifndef _USER_H_
 #define _USER_H_
-
 struct stat;
 typedef uint lock_t;
-typedef uint cond_t;
+typedef struct {
+    struct proc *queue[64];
+    int head;
+    int tail;
+    int size;
+    uint lk;
+} cond_t;
+
 typedef struct {
   lock_t lock;
   cond_t cond;
@@ -13,8 +19,9 @@ typedef struct {
 // system calls
 int fork(void);
 int clone(void(*)(void*), void*);
-int cv_wait(void*, void*);
-int cv_signal(void*);
+int cv_init(cond_t *);
+int cv_wait(cond_t *, void*);
+int cv_signal(cond_t *);
 int exit(void) __attribute__((noreturn));
 int wait(void);
 int join(void);

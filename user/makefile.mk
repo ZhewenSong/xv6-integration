@@ -2,8 +2,7 @@
 # user programs
 USER_PROGS := \
 	cat\
-	demo1\
-	demo2\
+	cond\
 	pc\
 	echo\
 	forktest\

@@ -21,7 +21,7 @@ lock_release(lock_t *m) {
 
 void
 cond_init(cond_t *cv) {
-  *cv = 0;
+  cv_init(cv);
 }
 
 void
@@ -37,7 +37,7 @@ cond_signal(cond_t *cv) {
 void
 sem_init(sem_t *s, int value) {
   s->value = value;
-  s->cond = 0;
+  cond_init(&s->cond);
   s->lock = 0;
 }
 

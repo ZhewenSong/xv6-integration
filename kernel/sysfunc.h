@@ -5,6 +5,7 @@
 int sys_chdir(void);
 int sys_clone(void);
 int sys_close(void);
+int sys_cv_init(void);
 int sys_cv_wait(void);
 int sys_cv_signal(void);
 int sys_dup(void);
