@@ -15,7 +15,7 @@ struct {
 struct spinlock tlock;
 
 static struct proc *initproc;
-
+int t_max[4] = {64, 32, 16, 8}; // timer ticks of the four levels
 int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
@@ -269,6 +269,20 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+
+// Get the highest priority level across the proc table so that
+// the scheduler schedule the first process with this priority
+// in the proc table
+int get_highest(void) {
+    int highest = 0;
+    struct proc *p;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if (p->state == RUNNABLE && highest < p->priority)
+            highest = p->priority;
+    }
+    return highest;
+}    
+    
 void
 scheduler(void)
 {
@@ -281,7 +295,7 @@ scheduler(void)
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
+      if(p->state != RUNNABLE || p->priority < get_highest())	
         continue;
 
       // Switch to chosen process.  It is the process's job
@@ -290,8 +304,14 @@ scheduler(void)
       proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      p->ticks[p->priority]++; 
+      if (p->ticks[p->priority]%t_max[p->priority] == 0 && p->priority > 0) {
+          p->priority--; // downgrade when the time ticks on this level are used up
+      }
       swtch(&cpu->scheduler, proc->context);
       switchkvm();
+      if (p->ticks[p->priority]%t_max[p->priority] != 0)
+          p--;
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       proc = 0;
