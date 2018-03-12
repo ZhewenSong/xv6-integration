@@ -316,8 +316,13 @@ copyuvm(pde_t *pgdir, uint sz)
     if((mem = kalloc()) == 0)
       goto bad;
     memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(d, (void*)i, PGSIZE, PADDR(mem), PTE_W|PTE_U) < 0)
-      goto bad;
+    if (*pte & PTE_W) {
+        if(mappages(d, (void*)i, PGSIZE, PADDR(mem), PTE_W|PTE_U) < 0)
+            goto bad;
+    } else {
+        if(mappages(d, (void*)i, PGSIZE, PADDR(mem), PTE_U) < 0)
+            goto bad;
+    }
   }
   
   // copy stack of the process, do not copy the stack of threads
@@ -330,8 +335,13 @@ copyuvm(pde_t *pgdir, uint sz)
     if((mem = kalloc()) == 0)
       goto bad;
     memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(d, (void*)i, PGSIZE, PADDR(mem), PTE_W|PTE_U) < 0)
-      goto bad;
+    if (*pte & PTE_W) {
+        if(mappages(d, (void*)i, PGSIZE, PADDR(mem), PTE_W|PTE_U) < 0)
+            goto bad;
+    } else {
+        if(mappages(d, (void*)i, PGSIZE, PADDR(mem), PTE_U) < 0)
+            goto bad;
+    }
   }
  
   return d;

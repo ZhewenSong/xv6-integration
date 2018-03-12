@@ -55,8 +55,15 @@ main() {
     printf(1, "read before : %d\n", p[2200]);
     printf(1, "returned %d\n", mprotect((void *)p, 4));
     printf(1, "read after : %d\n", p[2200]);
-    p[2200]++;
-    printf(1, "write : %d\n", p[2200]);
+    //p[2200]++;
+    //printf(1, "write : %d\n", p[2200]);
+    
+    if (fork() == 0) {
+        printf(1, "in child read : %d\n", p[2200]);
+        p[2200]++;
+        printf(1, "in child write : %d\n", p[2200]);
+    }
+    wait();
     exit();
 }
 
