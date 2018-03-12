@@ -28,5 +28,7 @@
 #define SYS_cv_init 24
 #define SYS_cv_wait 25
 #define SYS_cv_signal 26
+#define SYS_mprotect 27
+#define SYS_munprotect 28
 
 #endif // _SYSCALL_H_

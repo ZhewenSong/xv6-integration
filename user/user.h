@@ -66,5 +66,7 @@ void cond_signal(cond_t*);
 void sem_init(sem_t*, int);
 void sem_wait(sem_t*);
 void sem_post(sem_t*);
+int mprotect(void *, int);
+int munprotect(void *, int);
 #endif // _USER_H_
 

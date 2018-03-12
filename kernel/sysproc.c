@@ -119,6 +119,25 @@ sys_cv_signal(void)
   return cv_signal(cv);
 }
 
+int
+sys_mprotect(void)
+{
+  void *addr;
+  int len;
+  argptr(0, (char **)&addr, sizeof(void *));
+  argint(1, &len);
+  return mprotect(addr, len);
+}
+
+int
+sys_munprotect(void)
+{
+  void *addr;
+  int len;
+  argptr(0, (char **)&addr, sizeof(void *));
+  argint(1, &len);
+  return munprotect(addr, len);
+}
 
 // return how many clock tick interrupts have occurred
 // since boot.

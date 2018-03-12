@@ -57,7 +57,7 @@ trap(struct trapframe *tf)
       break;
     }
     proc->killed = 1;
-    //cprintf("process %d seg fault at 0x%p\n", proc->pid, rcr2());
+    cprintf("process %d seg fault at 0x%p\n", proc->pid, rcr2());
     break;
   }
     

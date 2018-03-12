@@ -380,3 +380,29 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
   }
   return 0;
 }
+
+int mprotect(void *addr, int len) {
+  if ((uint)addr % PGSIZE != 0) return -1;
+  uint va;
+  int i = 0;
+  pde_t *pgdir = proc->pgdir;
+  for (va = (uint) addr; i < len; va += PGSIZE, i++) {
+    pte_t *pte = walkpgdir(pgdir, (void*)va, 0);
+    *pte &= ~PTE_W;
+  }
+  lcr3(PADDR(pgdir));
+  return 0;
+}
+
+int munprotect(void *addr, int len) {
+  if ((uint)addr % PGSIZE != 0) return -1;
+  uint va;
+  int i = 0;
+  pde_t *pgdir = proc->pgdir;
+  for (va = (uint) addr; i < len; va += PGSIZE, i++) {
+    pte_t *pte = walkpgdir(pgdir, (void*)va, 0);
+    *pte |= PTE_W;
+  }
+  lcr3(PADDR(pgdir));
+  return 0;
+}

@@ -138,6 +138,8 @@ static int (*syscalls[])(void) = {
 [SYS_cv_init]  sys_cv_init,
 [SYS_cv_wait]  sys_cv_wait,
 [SYS_cv_signal] sys_cv_signal,
+[SYS_mprotect] sys_mprotect,
+[SYS_munprotect] sys_munprotect,
 };
 
 
